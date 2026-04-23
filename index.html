@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Drone Telemetry</title>
+</head>
+<body>
+  <h1>NRF Drone Telemetry</h1>
+
+  <button onclick="connect()">Connect</button>
+
+  <p>Roll: <span id="roll">0</span></p>
+  <p>Pitch: <span id="pitch">0</span></p>
+  <p>Yaw: <span id="yaw">0</span></p>
+
+<script>
+let characteristic;
+
+async function connect() {
+  const device = await navigator.bluetooth.requestDevice({
+    filters: [{ name: "NRF_DRONE" }],
+    optionalServices: ["6e400001-b5a3-f393-e0a9-e50e24dcca9e"]
+  });
+
+  const server = await device.gatt.connect();
+  const service = await server.getPrimaryService("6e400001-b5a3-f393-e0a9-e50e24dcca9e");
+
+  characteristic = await service.getCharacteristic("6e400003-b5a3-f393-e0a9-e50e24dcca9e");
+
+  await characteristic.startNotifications();
+  characteristic.addEventListener("characteristicvaluechanged", handleData);
+
+  console.log("Connected!");
+}
+
+function handleData(event) {
+  const data = event.target.value;
+
+  const roll = data.getFloat32(0, true);
+  const pitch = data.getFloat32(4, true);
+  const yaw = data.getFloat32(8, true);
+
+  document.getElementById("roll").innerText = roll.toFixed(2);
+  document.getElementById("pitch").innerText = pitch.toFixed(2);
+  document.getElementById("yaw").innerText = yaw.toFixed(2);
+}
+</script>
+
+</body>
+</html>
